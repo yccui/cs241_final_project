@@ -73,8 +73,6 @@ find_center <- function(matrix, num_attributes){
 #compute distances between each point in the features and the centers
 distance <- function(features, centers){ #needs generalization!!!!
   dis_matrix = matrix(0, nrow(features), nrow(centers))
-  print(ncol(features))
-  print(ncol(centers))
   for(i in 1 : nrow(features)){
     n = ncol(features) - 1     #delete the column of labels
     l_1 = vector(length = n)
@@ -139,71 +137,206 @@ metric <- function(final_it, cluster_centers){
   return (D)
 }
 
+#determine how to run the program based on specific inputs
+read_input <- function(){
+  print("Welcome to our K-Nearest Neighbors program!")
+  print("We have 5 data sets you can run with this program! Type the number corresponding with the data set you wish to run.")
+  print("1 - Iris")
+  print("2 - Banknote Authentication")
+  print("3 - Blood Transfusion Service Center")
+  n = readline(prompt = "Which do you want to load: ")
+  return(as.integer(n))
+}
+
 
 main <- function(){
-  set.seed(20) #fix random initialization
+  input = read_input()
+  if(input == 1){
+    set.seed(20) #fix random initialization
+    
+    data = read.csv("iris.csv") #obtain the data frame
+    dataset = data.matrix(data) #convert the data frame to a matrix
+    
+    start_col_of_features = 2                #the index of the first column of feaures is always 2 (index 1 is the row numbers)
+    last_col_of_features = ncol(dataset) - 1 #the index of the last column of features
+    col_of_labels = ncol(dataset)            #the index of the column of labels
+    
+    features = dataset[,c(start_col_of_features, last_col_of_features)] #extract the features
+    labels = dataset[ ,col_of_labels]               #extract the labels
+    
+    K = 3   #the number of clusters
+    num_attributes = 2   #the number of attributes to be considered
+    col_labels = num_attributes + 1  #the index of the column of labels once combined
+    
+    init_features = initialize(features, K)   #randomly initialize labels (K clusters)
   
-  data = read.csv("iris.csv") #obtain the data frame
-  dataset = data.matrix(data) #convert the data frame to a matrix
+    cluster_centers = matrix(0, K, ncol(init_features)) #create a matrix to store the K cluster centers
   
-  start_col_of_features = 2                #the index of the first column of feaures is always 2 (index 1 is the row numbers)
-  last_col_of_features = ncol(dataset) - 1 #the index of the last column of features
-  col_of_labels = ncol(dataset)            #the index of the column of labels
-  
-  features = dataset[,c(start_col_of_features, last_col_of_features)] #extract the features
-  labels = dataset[ ,col_of_labels]               #extract the labels
-  
-  K = 3   #the number of clusters
-  num_attributes = 2   #the number of attributes to be considered
-  col_labels = num_attributes + 1  #the index of the column of labels once combined
-  
-  init_features = initialize(features, K)   #randomly initialize labels (K clusters)
-
-  cluster_centers = matrix(0, K, ncol(init_features)) #create a matrix to store the K cluster centers
-
-  for (i in 1:K){
-    temp = extract(init_features, i)
-    cluster_centers[i, ] = find_center(temp, num_attributes)
-  }
-  
-  first_iteration = reassign(init_features, cluster_centers) #result from the 1st iteration
-  
-  starter = convergence(init_features, first_iteration, col_labels) #initial convergence check
-  
-  while (!starter){
-    cluster_centers = matrix(0, K, ncol(first_iteration))
     for (i in 1:K){
-      temp = extract(first_iteration, i)
+      temp = extract(init_features, i)
       cluster_centers[i, ] = find_center(temp, num_attributes)
     }
     
-    next_iteration = reassign(first_iteration, cluster_centers) #result from the next iteration
+    first_iteration = reassign(init_features, cluster_centers) #result from the 1st iteration
     
-    starter = convergence(first_iteration, next_iteration, col_labels) #update convergence 
+    starter = convergence(init_features, first_iteration, col_labels) #initial convergence check
     
-    first_iteration = next_iteration #update starting configuration
+    while (!starter){
+      cluster_centers = matrix(0, K, ncol(first_iteration))
+      for (i in 1:K){
+        temp = extract(first_iteration, i)
+        cluster_centers[i, ] = find_center(temp, num_attributes)
+      }
+      
+      next_iteration = reassign(first_iteration, cluster_centers) #result from the next iteration
+      
+      starter = convergence(first_iteration, next_iteration, col_labels) #update convergence 
+      
+      first_iteration = next_iteration #update starting configuration
+    
+    }
+    
+    final_iteration = first_iteration #obtain result from the final iteration
   
+    labels_kmeans = first_iteration[ , col_labels] #obtain labels of the final iteration
+  
+    D = metric(final_iteration, cluster_centers) #computer the metric
+    
+    shapes = vector(length = K) #for plotting: make an array of shapes
+    for (i in 15:(15 + K - 1)){
+      shapes[i- 14] = i
+    }
+    
+    colors = c(1:K) #for plotting: make an array of colors
+  
+    plot(features, pch = shapes[as.numeric(labels)], main = "Ground Truth", xlab = "Sepal Length", ylab = "Sepal Width", col = colors[as.numeric(labels)])
+    
+    plot(features, pch = shapes[as.numeric(labels_kmeans)], main = "Clustering by K-Means", xlab = "Sepal Length", ylab = "Sepal Width", col = colors[as.numeric(labels_kmeans)])
+  }else if (input == 2){
+    set.seed(20) #fix random initialization
+    
+    data = read.csv("data_banknote_authentication.txt") #obtain the data frame
+    dataset = data.matrix(data) #convert the data frame to a matrix
+    
+    start_col_of_features = 1                #the index of the first column of feaures is always 2 (index 1 is the row numbers)
+    last_col_of_features = ncol(dataset) - 1 #the index of the last column of features
+    col_of_labels = ncol(dataset)            #the index of the column of labels
+    
+    features = dataset[,c(start_col_of_features, last_col_of_features)]+1 #extract the features
+    labels = dataset[ ,5] + 1  #extract the labels
+    
+    K = 2   #the number of clusters
+    num_attributes = 2   #the number of attributes to be considered
+    col_labels = num_attributes + 1  #the index of the column of labels once combined
+    
+    init_features = initialize(features, K)   #randomly initialize labels (K clusters)
+    
+    cluster_centers = matrix(0, K, ncol(init_features)) #create a matrix to store the K cluster centers
+    
+    for (i in 1:K){
+      temp = extract(init_features, i)
+      cluster_centers[i, ] = find_center(temp, num_attributes)
+    }
+    
+    first_iteration = reassign(init_features, cluster_centers) #result from the 1st iteration
+    
+    starter = convergence(init_features, first_iteration, col_labels) #initial convergence check
+    
+    while (!starter){
+      cluster_centers = matrix(0, K, ncol(first_iteration))
+      for (i in 1:K){
+        temp = extract(first_iteration, i)
+        cluster_centers[i, ] = find_center(temp, num_attributes)
+      }
+      
+      next_iteration = reassign(first_iteration, cluster_centers) #result from the next iteration
+      
+      starter = convergence(first_iteration, next_iteration, col_labels) #update convergence 
+      
+      first_iteration = next_iteration #update starting configuration
+      
+    }
+    
+    final_iteration = first_iteration #obtain result from the final iteration
+    
+    labels_kmeans = first_iteration[ , col_labels] #obtain labels of the final iteration
+    
+    D = metric(final_iteration, cluster_centers) #computer the metric
+    
+    shapes = vector(length = K) #for plotting: make an array of shapes
+    for (i in 15:(15 + K - 1)){
+      shapes[i- 14] = i
+    }
+    
+    colors = c(1:K) #for plotting: make an array of colors
+    
+    plot(features, pch = shapes[as.numeric(labels)], main = "Ground Truth", xlab = "Variance of Wavelet Transformed image", ylab = "Skewness of Wavelet Transformed image", col= c("red", "blue")[as.numeric(labels)])
+    #plot knn classification
+    plot(features, pch = shapes[as.numeric(labels_kmeans)], main = "Clustering by K-Means", xlab = "Variance of Wavelet Transformed image", ylab = " Skewness of Wavelet Transformed image", col= c("red", "blue")[as.numeric(labels_kmeans)])
+    
+  }else if(input == 3){
+    set.seed(20) #fix random initialization
+    
+    data = read.csv("transfusion.data") #obtain the data frame
+    dataset = data.matrix(data) #convert the data frame to a matrix
+    
+    start_col_of_features = 1                #the index of the first column of feaures is always 2 (index 1 is the row numbers)
+    last_col_of_features = 2 #the index of the last column of features
+    col_of_labels = ncol(dataset)            #the index of the column of labels
+    
+    features = dataset[,c(start_col_of_features, last_col_of_features)] #extract the features
+    labels = dataset[ ,5]+1               #extract the labels
+    
+    K = 2   #the number of clusters
+    num_attributes = 2   #the number of attributes to be considered
+    col_labels = num_attributes + 1  #the index of the column of labels once combined
+    
+    init_features = initialize(features, K)   #randomly initialize labels (K clusters)
+    
+    cluster_centers = matrix(0, K, ncol(init_features)) #create a matrix to store the K cluster centers
+    
+    for (i in 1:K){
+      temp = extract(init_features, i)
+      cluster_centers[i, ] = find_center(temp, num_attributes)
+    }
+    
+    first_iteration = reassign(init_features, cluster_centers) #result from the 1st iteration
+    
+    starter = convergence(init_features, first_iteration, col_labels) #initial convergence check
+    
+    while (!starter){
+      cluster_centers = matrix(0, K, ncol(first_iteration))
+      for (i in 1:K){
+        temp = extract(first_iteration, i)
+        cluster_centers[i, ] = find_center(temp, num_attributes)
+      }
+      
+      next_iteration = reassign(first_iteration, cluster_centers) #result from the next iteration
+      
+      starter = convergence(first_iteration, next_iteration, col_labels) #update convergence 
+      
+      first_iteration = next_iteration #update starting configuration
+      
+    }
+    
+    final_iteration = first_iteration #obtain result from the final iteration
+    
+    labels_kmeans = first_iteration[ , col_labels] #obtain labels of the final iteration
+    
+    D = metric(final_iteration, cluster_centers) #computer the metric
+    
+    shapes = vector(length = K) #for plotting: make an array of shapes
+    for (i in 15:(15 + K - 1)){
+      shapes[i- 14] = i
+    }
+    
+    colors = c(1:K) #for plotting: make an array of colors
+    
+    plot(features, pch = shapes[as.numeric(labels)], main = "Ground Truth", xlab = "Recency - months since last donation", ylab = "Frequency - total number of donation", col= c("red", "blue")[as.numeric(labels)])
+    #plot knn classification
+    plot(features, pch = shapes[as.numeric(labels_kmeans)], main = "Clustering by K-Means", xlab = "Recency - months since last donation", ylab = " Frequency - total number of donation", col= c("red", "blue")[as.numeric(labels_kmeans)])
+    
   }
-  
-  final_iteration = first_iteration #obtain result from the final iteration
-
-  labels_kmeans = first_iteration[ , col_labels] #obtain labels of the final iteration
-
-  D = metric(final_iteration, cluster_centers) #computer the metric
-  
-  print(D)
-  
-  shapes = vector(length = K) #for plotting: make an array of shapes
-  for (i in 15:(15 + K - 1)){
-    shapes[i- 14] = i
-  }
-  
-  colors = c(1:K) #for plotting: make an array of colors
-
-  plot(features, pch = shapes[as.numeric(labels)], main = "Ground Truth", xlab = "Sepal Length", ylab = "Sepal Width", col = colors[as.numeric(labels)])
-  
-  plot(features, pch = shapes[as.numeric(labels_kmeans)], main = "Clustering by K-Means", xlab = "Sepal Length", ylab = "Sepal Width", col = colors[as.numeric(labels_kmeans)])
-  
 }
 
 main()
